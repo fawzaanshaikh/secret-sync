@@ -1,0 +1,11 @@
+CLAUDE.md
+CONCEPT_SUMMARY.md
+node_modules/
+dist/
+.env
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+tests/.tmp/
