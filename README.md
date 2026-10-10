@@ -71,6 +71,11 @@ cd ui
 npm test
 ```
 
+## Local deployment scripts
+
+For a single-machine install/build/run (no dev watcher), see `deployment/README.md`:
+`deployment/linux/deploy.sh` (Linux/macOS) or `deployment\windows\deploy.ps1` (Windows).
+
 ## Project structure
 
 ```
