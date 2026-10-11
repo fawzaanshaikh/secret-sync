@@ -8,8 +8,11 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    setUsers(await api.listUsers());
-    setLoading(false);
+    try {
+      setUsers(await api.listUsers());
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {

@@ -12,10 +12,13 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    const [projectList, pending] = await Promise.all([api.listProjects(), api.listPendingProposals()]);
-    setProjects(projectList);
-    setPendingCount(pending.length);
-    setLoading(false);
+    try {
+      const [projectList, pending] = await Promise.all([api.listProjects(), api.listPendingProposals()]);
+      setProjects(projectList);
+      setPendingCount(pending.length);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {

@@ -14,10 +14,13 @@ export function ProjectPage() {
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    const data = await api.getProject(projectId);
-    setProject(data);
-    setActiveBranchId((current) => current ?? data.branches[0]?.id ?? null);
-    setLoading(false);
+    try {
+      const data = await api.getProject(projectId);
+      setProject(data);
+      setActiveBranchId((current) => current ?? data.branches[0]?.id ?? null);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {

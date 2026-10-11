@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api, setAuthToken } from '../api/client.js';
+import { api, setAuthToken, setUnauthorizedHandler } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +38,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, ready, login, setup, logout, isAdmin: user?.role === 'admin' }}>

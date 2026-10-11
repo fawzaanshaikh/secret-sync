@@ -1,9 +1,14 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000/api';
 
 let authToken = null;
+let onUnauthorized = null;
 
 export function setAuthToken(token) {
   authToken = token;
+}
+
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
 }
 
 async function request(path, { method = 'GET', body } = {}) {
@@ -15,6 +20,10 @@ async function request(path, { method = 'GET', body } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  if (res.status === 401 && authToken) {
+    onUnauthorized?.();
+  }
 
   if (res.status === 204) return null;
 
