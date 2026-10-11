@@ -95,8 +95,11 @@ export function ReviewPage() {
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    setProposals(await api.listPendingProposals());
-    setLoading(false);
+    try {
+      setProposals(await api.listPendingProposals());
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {

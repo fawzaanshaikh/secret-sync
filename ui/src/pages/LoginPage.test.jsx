@@ -7,6 +7,7 @@ import { AuthProvider } from '../context/AuthContext.jsx';
 vi.mock('../api/client.js', () => ({
   api: { login: vi.fn() },
   setAuthToken: vi.fn(),
+  setUnauthorizedHandler: vi.fn(),
 }));
 
 import { api } from '../api/client.js';
