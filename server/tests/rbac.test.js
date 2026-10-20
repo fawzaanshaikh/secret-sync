@@ -97,3 +97,97 @@ test('writing to an unprotected branch applies immediately, no proposal needed',
   assert.equal(writeRes.status, 200);
   assert.equal(writeRes.body[0].value, '1');
 });
+
+test('required approvals cannot exceed eligible reviewers (project members minus proposer)', async () => {
+  await request(app).post('/api/auth/setup').send({ username: 'admin4', password: 'adminpass123' });
+  const adminLogin = await request(app).post('/api/auth/login').send({ username: 'admin4', password: 'adminpass123' });
+  const adminToken = adminLogin.body.token;
+
+  const projectRes = await request(app)
+    .post('/api/projects')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ name: 'approval-cap-project' });
+  const projectId = projectRes.body.id;
+  const project = await request(app)
+    .get(`/api/projects/${projectId}`)
+    .set('Authorization', `Bearer ${adminToken}`);
+  const branchId = project.body.branches[0].id;
+
+  // Only the creating admin is a member right now: 1 member -> max 0 possible approvals.
+  const tooHigh = await request(app)
+    .patch(`/api/projects/${projectId}/branches/${branchId}/protection`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ isProtected: true, requiredApprovals: 1 });
+  assert.equal(tooHigh.status, 400);
+
+  await request(app)
+    .post('/api/users')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ username: 'member-cap-1', password: 'memberpass123', role: 'member' });
+  const memberRes = await request(app)
+    .get('/api/users')
+    .set('Authorization', `Bearer ${adminToken}`);
+  const memberId = memberRes.body.find((u) => u.username === 'member-cap-1').id;
+  await request(app)
+    .post(`/api/projects/${projectId}/members`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ userId: memberId });
+
+  // Now 2 members -> max 1 possible approval. Requesting 2 should still fail.
+  const stillTooHigh = await request(app)
+    .patch(`/api/projects/${projectId}/branches/${branchId}/protection`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ isProtected: true, requiredApprovals: 2 });
+  assert.equal(stillTooHigh.status, 400);
+
+  const ok = await request(app)
+    .patch(`/api/projects/${projectId}/branches/${branchId}/protection`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ isProtected: true, requiredApprovals: 1 });
+  assert.equal(ok.status, 200);
+});
+
+test('restricting reviewers to fewer people than required approvals is rejected', async () => {
+  await request(app).post('/api/auth/setup').send({ username: 'admin5', password: 'adminpass123' });
+  const adminLogin = await request(app).post('/api/auth/login').send({ username: 'admin5', password: 'adminpass123' });
+  const adminToken = adminLogin.body.token;
+
+  const projectRes = await request(app)
+    .post('/api/projects')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ name: 'reviewer-cap-project' });
+  const projectId = projectRes.body.id;
+  const project = await request(app)
+    .get(`/api/projects/${projectId}`)
+    .set('Authorization', `Bearer ${adminToken}`);
+  const branchId = project.body.branches[0].id;
+
+  for (const username of ['rev-cap-1', 'rev-cap-2']) {
+    await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ username, password: 'memberpass123', role: 'member' });
+  }
+  const usersRes = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`);
+  const rev1 = usersRes.body.find((u) => u.username === 'rev-cap-1').id;
+  const rev2 = usersRes.body.find((u) => u.username === 'rev-cap-2').id;
+  for (const userId of [rev1, rev2]) {
+    await request(app)
+      .post(`/api/projects/${projectId}/members`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId });
+  }
+
+  await request(app)
+    .patch(`/api/projects/${projectId}/branches/${branchId}/protection`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ isProtected: true, requiredApprovals: 2 });
+
+  // 2 required approvals, but restricting to a single reviewer can only ever produce 1.
+  const res = await request(app)
+    .put(`/api/projects/${projectId}/branches/${branchId}/reviewers`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ userIds: [rev1] });
+
+  assert.equal(res.status, 400);
+});

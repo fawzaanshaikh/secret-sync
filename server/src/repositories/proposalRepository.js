@@ -69,23 +69,24 @@ export const proposalRepository = {
     return rows.map((r) => this.hydrate(r));
   },
 
-  listPendingForReviewer(userId) {
-    // Pending proposals in projects the user belongs to, excluding their own proposals
-    // and branches they've already reviewed.
+  listPendingForReviewer(userId, role) {
+    // Pending proposals in projects the user belongs to (or any project, if admin),
+    // excluding their own proposals and branches they've already reviewed.
     const db = getDb();
     const rows = db
       .prepare(
         `SELECT DISTINCT p.* FROM proposals p
          JOIN branches b ON b.id = p.branch_id
-         JOIN project_members pm ON pm.project_id = b.project_id AND pm.user_id = ?
+         LEFT JOIN project_members pm ON pm.project_id = b.project_id AND pm.user_id = ?
          WHERE p.status = 'pending'
            AND p.proposed_by != ?
+           AND (? = 'admin' OR pm.user_id IS NOT NULL)
            AND NOT EXISTS (
              SELECT 1 FROM proposal_reviews pr WHERE pr.proposal_id = p.id AND pr.reviewer_id = ?
            )
          ORDER BY p.created_at DESC`
       )
-      .all(userId, userId, userId);
+      .all(userId, userId, role, userId);
     return rows.map((r) => this.hydrate(r));
   },
 

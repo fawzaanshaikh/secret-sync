@@ -10,6 +10,8 @@ export function ProjectPage() {
   const [project, setProject] = useState(null);
   const [activeBranchId, setActiveBranchId] = useState(null);
   const [newBranchName, setNewBranchName] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+  const [newMemberId, setNewMemberId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,34 @@ export function ProjectPage() {
     refresh().catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.listUsers().then(setAllUsers).catch((err) => setError(err.message));
+  }, [isAdmin]);
+
+  async function handleAddMember(e) {
+    e.preventDefault();
+    if (!newMemberId) return;
+    setError('');
+    try {
+      await api.addMember(projectId, Number(newMemberId));
+      setNewMemberId('');
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleRemoveMember(userId) {
+    setError('');
+    try {
+      await api.removeMember(projectId, userId);
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   async function handleCreateBranch(e) {
     e.preventDefault();
@@ -144,9 +174,39 @@ export function ProjectPage() {
         <h3 style={{ marginTop: 0 }}>Members</h3>
         <ul style={{ margin: 0, paddingLeft: 20 }}>
           {project.members.map((m) => (
-            <li key={m.id}>{m.username} <span className="muted">({m.role})</span></li>
+            <li key={m.id}>
+              {m.username} <span className="muted">({m.role})</span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ marginLeft: 8, padding: '2px 8px' }}
+                  onClick={() => handleRemoveMember(m.id)}
+                >
+                  Remove
+                </button>
+              )}
+            </li>
           ))}
         </ul>
+
+        {isAdmin && (
+          <form onSubmit={handleAddMember} style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <select
+              className="input"
+              value={newMemberId}
+              onChange={(e) => setNewMemberId(e.target.value)}
+            >
+              <option value="">Select a user…</option>
+              {allUsers
+                .filter((u) => !project.members.some((m) => m.id === u.id))
+                .map((u) => (
+                  <option key={u.id} value={u.id}>{u.username} ({u.role})</option>
+                ))}
+            </select>
+            <button type="submit" className="btn">Add member</button>
+          </form>
+        )}
       </div>
     </div>
   );
