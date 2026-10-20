@@ -10,7 +10,8 @@
 
 - A project is only visible/usable by its members, except admins see and can act on every project regardless of membership (`projectRepository.listForUser`, `requireProjectMember` middleware bypass for `role === 'admin'`).
 - Creating a project automatically adds the creator as a member (`projectRepository.create`).
-- Admins add/remove members via `POST /api/projects/:projectId/members` and `DELETE /api/projects/:projectId/members/:userId`.
+- Admins add/remove members via `POST /api/projects/:projectId/members` and `DELETE /api/projects/:projectId/members/:userId`, exposed in the UI as a "Members" card on the project page (select an existing user to add, "Remove" next to each member).
+- Creating a user does not add them to any project. An admin must explicitly add them as a member of each project they need access to, except for the pending-review queue (see below), which admins see regardless of membership.
 
 ## What each role can do
 

@@ -24,3 +24,8 @@
 - `ReviewPage.jsx`: "needs your review" queue (`GET /api/proposals/pending`) - pending proposals in the reviewer's projects, excluding their own proposals and branches they've already reviewed.
 - Dashboard shows a count badge for the same queue.
 - Each pending proposal shows a running approval count and lets the reviewer approve/reject with an optional comment (max 500 characters).
+
+## Admins and the pending queue
+
+- Admins see pending proposals for every project, even if they were never added as a member of that project (`proposalRepository.listPendingForReviewer` checks `role === 'admin'` as an alternative to an actual membership row).
+- A plain member only sees proposals for projects they're an explicit member of. Creating a member/admin account does not add them to any project; that's a separate step (see `rbac.md`).

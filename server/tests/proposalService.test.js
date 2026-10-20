@@ -5,6 +5,7 @@ import { userRepository } from '../src/repositories/userRepository.js';
 import { projectRepository } from '../src/repositories/projectRepository.js';
 import { branchRepository } from '../src/repositories/branchRepository.js';
 import { envVarRepository } from '../src/repositories/envVarRepository.js';
+import { proposalRepository } from '../src/repositories/proposalRepository.js';
 import { proposalService, ForbiddenError } from '../src/services/proposalService.js';
 
 beforeEach(async () => {
@@ -119,4 +120,32 @@ test('branch with a restricted reviewer list blocks non-listed reviewers', () =>
 
   const resolved = proposalService.review({ proposalId: proposal.id, reviewer: allowedReviewer, decision: 'approve' });
   assert.equal(resolved.status, 'approved');
+});
+
+test('pending queue includes admins even when not added as project members', () => {
+  const { admin, branch } = makeProtectedBranch(1);
+  const otherAdmin = makeUser(`other-admin-${Date.now()}`, 'admin');
+
+  proposalService.createProposal({
+    branchId: branch.id,
+    proposedBy: admin.id,
+    changes: [{ key: 'X', action: 'add', newValue: 'y' }],
+  });
+
+  const pending = proposalRepository.listPendingForReviewer(otherAdmin.id, 'admin');
+  assert.equal(pending.length, 1);
+});
+
+test('pending queue excludes members who were never added to the project', () => {
+  const { admin, branch } = makeProtectedBranch(1);
+  const outsider = makeUser(`outsider-${Date.now()}`, 'member');
+
+  proposalService.createProposal({
+    branchId: branch.id,
+    proposedBy: admin.id,
+    changes: [{ key: 'X', action: 'add', newValue: 'y' }],
+  });
+
+  const pending = proposalRepository.listPendingForReviewer(outsider.id, 'member');
+  assert.equal(pending.length, 0);
 });

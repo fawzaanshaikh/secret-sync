@@ -12,9 +12,10 @@
 - `requiredApprovals` range: integer 1-10.
 - Unprotecting a branch does not retroactively affect proposals already resolved on it; it only changes how future `POST .../env/:branchId` calls are routed (direct apply vs proposal).
 
-## Reviewer restriction (admin only)
+## Required approvals cannot exceed eligible reviewers
 
-- `PUT /api/projects/:projectId/branches/:branchId/reviewers` replaces the branch's reviewer allow-list in one transaction (full delete + reinsert, not a diff).
-- Empty list = unrestricted: any project member other than the proposer may review.
-- Non-empty list = only the listed users may review (still excluding the proposer themselves, even if listed).
-- There is currently no dedicated UI page for managing this list; it's only reachable via the API (`api.setBranchReviewers` exists in `ui/src/api/client.js` but no page calls it yet).
+- The proposer is always excluded from reviewing their own proposal, so the maximum number of approvals that can ever actually be collected is one less than the pool of eligible reviewers.
+- Eligible pool = the branch's restricted reviewer list if one is set, otherwise the project's member count.
+- `PATCH .../protection` rejects (400) a `requiredApprovals` value above `max(pool - 1, 0)` when `isProtected: true`. If the pool is too small to support even 1 approval (e.g. a 1-member project), protecting the branch at all is rejected until more members/reviewers are added.
+- `PUT .../reviewers` rejects (400) a reviewer list that's too small for the branch's current `requiredApprovals` (e.g. setting `requiredApprovals: 2` then later restricting the list to a single reviewer). Lower `requiredApprovals` first if you need to shrink the list below that.
+- This check runs server-side only; the UI shows whatever error message comes back (no client-side pre-validation/clamping on the number input yet).

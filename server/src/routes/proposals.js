@@ -8,7 +8,7 @@ const router = Router();
 
 // Global "needs your review" queue, used by the Dashboard badge and Review screen.
 router.get('/pending', requireAuth, (req, res) => {
-  res.json(proposalRepository.listPendingForReviewer(req.user.id));
+  res.json(proposalRepository.listPendingForReviewer(req.user.id, req.user.role));
 });
 
 router.get('/branch/:branchId', requireAuth, (req, res) => {
