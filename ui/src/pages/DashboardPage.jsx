@@ -8,7 +8,6 @@ export function DashboardPage() {
   const [projects, setProjects] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [newProjectName, setNewProjectName] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -22,18 +21,19 @@ export function DashboardPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh().catch(() => {
+      // surfaced via the global error toast
+    });
   }, []);
 
   async function handleCreateProject(e) {
     e.preventDefault();
-    setError('');
     try {
       await api.createProject(newProjectName);
       setNewProjectName('');
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
@@ -66,8 +66,6 @@ export function DashboardPage() {
           <button type="submit" className="btn btn-primary">Create</button>
         </form>
       )}
-
-      {error && <p className="error-text">{error}</p>}
 
       <div style={{ marginTop: 16 }}>
         {projects.length === 0 && <p className="muted">No projects yet.</p>}

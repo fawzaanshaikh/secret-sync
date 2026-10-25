@@ -4,7 +4,6 @@ import { api } from '../api/client.js';
 export function UsersPage() {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ username: '', password: '', role: 'member' });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -16,18 +15,19 @@ export function UsersPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh().catch(() => {
+      // surfaced via the global error toast
+    });
   }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
-    setError('');
     try {
       await api.createUser(form);
       setForm({ username: '', password: '', role: 'member' });
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
@@ -73,7 +73,6 @@ export function UsersPage() {
             <option value="admin">Admin</option>
           </select>
         </div>
-        {error && <p className="error-text">{error}</p>}
         <button type="submit" className="btn btn-primary">Create user</button>
       </form>
 

@@ -10,13 +10,11 @@ export function EnvVarEditor({ projectId, branch, canWrite }) {
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
   const [status, setStatus] = useState(null);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setEdits({});
     setStatus(null);
-    setError('');
     setLoading(true);
     api
       .listEnvVars(projectId, branch.id)
@@ -62,7 +60,6 @@ export function EnvVarEditor({ projectId, branch, canWrite }) {
   }
 
   async function handleSave() {
-    setError('');
     const changes = Object.entries(edits).map(([key, edit]) => ({
       key,
       action: edit.action,
@@ -79,8 +76,8 @@ export function EnvVarEditor({ projectId, branch, canWrite }) {
         setStatus('Changes applied.');
       }
       setEdits({});
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
@@ -164,7 +161,6 @@ export function EnvVarEditor({ projectId, branch, canWrite }) {
       )}
 
       {status && <p className="muted" style={{ marginTop: 8 }}>{status}</p>}
-      {error && <p className="error-text">{error}</p>}
     </div>
   );
 }

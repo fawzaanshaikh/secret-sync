@@ -7,18 +7,16 @@ export function SetupPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await setup(username, password);
       navigate('/');
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     } finally {
       setLoading(false);
     }
@@ -53,7 +51,6 @@ export function SetupPage() {
               required
             />
           </div>
-          {error && <p className="error-text">{error}</p>}
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Creating…' : 'Create Admin account'}
           </button>

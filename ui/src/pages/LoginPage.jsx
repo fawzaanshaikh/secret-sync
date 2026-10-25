@@ -7,18 +7,16 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await login(username, password);
       navigate('/');
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     } finally {
       setLoading(false);
     }
@@ -44,7 +42,6 @@ export function LoginPage() {
               required
             />
           </div>
-          {error && <p className="error-text">{error}</p>}
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Logging in…' : 'Log in'}
           </button>

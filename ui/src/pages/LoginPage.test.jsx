@@ -17,7 +17,8 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-test('submits credentials and shows an error on failure', async () => {
+test('submits credentials and resets the form on failure', async () => {
+  // Error display itself is owned by the global toast (ToastContext), not this page.
   api.login.mockRejectedValue(new Error('Invalid credentials'));
 
   render(
@@ -32,6 +33,6 @@ test('submits credentials and shows an error on failure', async () => {
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrongpass' } });
   fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
 
-  await waitFor(() => screen.getByText('Invalid credentials'));
-  expect(api.login).toHaveBeenCalledWith('dev1', 'wrongpass');
+  await waitFor(() => expect(api.login).toHaveBeenCalledWith('dev1', 'wrongpass'));
+  await waitFor(() => screen.getByRole('button', { name: 'Log in' }));
 });
