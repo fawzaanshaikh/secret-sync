@@ -29,17 +29,15 @@ function ChangeRow({ change }) {
 
 function ProposalCard({ proposal, onReviewed }) {
   const [comment, setComment] = useState('');
-  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function decide(decision) {
-    setError('');
     setSubmitting(true);
     try {
       await api.reviewProposal(proposal.id, decision, comment || undefined);
       onReviewed();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     } finally {
       setSubmitting(false);
     }
@@ -75,8 +73,6 @@ function ProposalCard({ proposal, onReviewed }) {
         />
       </div>
 
-      {error && <p className="error-text">{error}</p>}
-
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" className="btn btn-primary" disabled={submitting} onClick={() => decide('approve')}>
           Approve
@@ -91,7 +87,6 @@ function ProposalCard({ proposal, onReviewed }) {
 
 export function ReviewPage() {
   const [proposals, setProposals] = useState([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -103,7 +98,9 @@ export function ReviewPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh().catch(() => {
+      // surfaced via the global error toast
+    });
   }, []);
 
   if (loading) return <p className="muted">Loading…</p>;
@@ -111,7 +108,6 @@ export function ReviewPage() {
   return (
     <div>
       <h1>Review queue</h1>
-      {error && <p className="error-text">{error}</p>}
       {proposals.length === 0 && <p className="muted">Nothing awaiting your review.</p>}
       {proposals.map((p) => (
         <ProposalCard key={p.id} proposal={p} onReviewed={refresh} />

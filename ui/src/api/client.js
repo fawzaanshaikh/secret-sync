@@ -2,6 +2,7 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000/api';
 
 let authToken = null;
 let onUnauthorized = null;
+let onError = null;
 
 export function setAuthToken(token) {
   authToken = token;
@@ -9,6 +10,27 @@ export function setAuthToken(token) {
 
 export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
+}
+
+// Called with a human-readable message whenever any request fails, so a single
+// toast handler (wired up in ToastContext) can surface every API error without
+// each page having to catch and display it individually.
+export function setErrorHandler(fn) {
+  onError = fn;
+}
+
+// zod's .flatten() shape is { formErrors: string[], fieldErrors: { [field]: string[] } }.
+// Flatten both into one readable line instead of dumping the raw object.
+function formatErrorMessage(data, status) {
+  const err = data?.error;
+  if (!err) return `Request failed (${status})`;
+  if (typeof err === 'string') return err;
+
+  const parts = [...(err.formErrors ?? [])];
+  for (const [field, messages] of Object.entries(err.fieldErrors ?? {})) {
+    if (messages?.length) parts.push(`${field}: ${messages.join(', ')}`);
+  }
+  return parts.length > 0 ? parts.join('; ') : `Request failed (${status})`;
 }
 
 async function request(path, { method = 'GET', body } = {}) {
@@ -29,8 +51,9 @@ async function request(path, { method = 'GET', body } = {}) {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const message = data?.error?.formErrors?.join(', ') || data?.error || `Request failed (${res.status})`;
-    throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+    const message = formatErrorMessage(data, res.status);
+    onError?.(message);
+    throw new Error(message);
   }
   return data;
 }

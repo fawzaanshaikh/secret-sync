@@ -12,7 +12,7 @@ export function ProjectPage() {
   const [newBranchName, setNewBranchName] = useState('');
   const [allUsers, setAllUsers] = useState([]);
   const [newMemberId, setNewMemberId] = useState('');
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -26,48 +26,47 @@ export function ProjectPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh().catch(() => setLoadError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {
     if (!isAdmin) return;
-    api.listUsers().then(setAllUsers).catch((err) => setError(err.message));
+    api.listUsers().then(setAllUsers).catch(() => {
+      // surfaced via the global error toast
+    });
   }, [isAdmin]);
 
   async function handleAddMember(e) {
     e.preventDefault();
     if (!newMemberId) return;
-    setError('');
     try {
       await api.addMember(projectId, Number(newMemberId));
       setNewMemberId('');
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
   async function handleRemoveMember(userId) {
-    setError('');
     try {
       await api.removeMember(projectId, userId);
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
   async function handleCreateBranch(e) {
     e.preventDefault();
-    setError('');
     try {
       const branch = await api.createBranch(projectId, newBranchName);
       setNewBranchName('');
       await refresh();
       setActiveBranchId(branch.id);
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
@@ -78,8 +77,8 @@ export function ProjectPage() {
         requiredApprovals: branch.required_approvals,
       });
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
@@ -90,20 +89,19 @@ export function ProjectPage() {
         requiredApprovals: Number(value),
       });
       await refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      // surfaced via the global error toast
     }
   }
 
   if (loading) return <p className="muted">Loading…</p>;
-  if (!project) return <p className="error-text">{error}</p>;
+  if (loadError || !project) return <p className="muted">Couldn't load this project.</p>;
 
   const activeBranch = project.branches.find((b) => b.id === activeBranchId);
 
   return (
     <div>
       <h1>{project.name}</h1>
-      {error && <p className="error-text">{error}</p>}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Branches</h3>
